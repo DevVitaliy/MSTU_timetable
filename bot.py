@@ -27,5 +27,14 @@ async def send_welcome(message: types.Message):
     await message.reply("Hi!\nI'm EchoBot!\nPowered by aiogram.", reply_markup=timetable_kb)
 
 
+@dp.message_handler()
+async def send_timetable(message: types.Message):
+    if message.text == 'Расписание':
+        # здесь будет отправляться расписание
+        await message.answer(message.text)
+    else:
+        pass
+
+
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
