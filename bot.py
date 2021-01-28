@@ -1,5 +1,6 @@
 import logging
 import settings
+import timetable_parser as p
 
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import ReplyKeyboardRemove, ReplyKeyboardMarkup, KeyboardButton
@@ -30,8 +31,7 @@ async def send_welcome(message: types.Message):
 @dp.message_handler()
 async def send_timetable(message: types.Message):
     if message.text == 'Расписание':
-        # здесь будет отправляться расписание
-        await message.answer(message.text)
+        await message.answer(p.create_timetable_message())
     else:
         pass
 
