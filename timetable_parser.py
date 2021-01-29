@@ -1,86 +1,81 @@
+import json
 import requests
-import datetime
 from bs4 import BeautifulSoup
-
+from jsondiff import diff
 
 timetable_url = 'http://www.mstu.edu.ru/study/timetable/'
 
 
-def get_perend():
-    with open('date', 'rt') as fout:
-        date = fout.read()
-    # with open('pers', 'rt') as fout:
-        pers = 137
+def get_last_update_date():
+    res = requests.post(timetable_url)
+    soup = BeautifulSoup(res.text, 'html.parser')
+    last_update = soup.find('p', class_='text-right').text
 
-    year, month, day = date.split(' ')
-    start_date = datetime.date(int(year), int(month), int(day))
-    end_date = start_date + datetime.timedelta(days=6)
-
-    current_date = datetime.date.today()
-    if current_date > end_date:
-        start_date = start_date + datetime.timedelta(days=7)
-        end_date = end_date + datetime.timedelta(days=7)
-
-        with open('date', 'wt') as fout:
-            fout.write(str(start_date.year) + ' ' + str(start_date.month) + ' ' + str(start_date.day))
-        with open('pers', 'wt') as fout:
-            fout.write(str(int(pers) + 1))
-
-    return start_date, end_date
+    return last_update
 
 
-def get_request_key():
-    with open('pers', 'rt') as fout:
-        pers = fout.read()
-    res = requests.post('http://www.mstu.edu.ru/study/timetable/',
-                        data={'mode':'1', 'pers':f'{pers}', 'facs':'3', 'courses':'4'})
-    return res.text
+def get_current_timetable():
+    with open('current_timetable.json') as json_file:
+        current_timetable = json.load(json_file)
+
+    message = str()
+    message = message + get_last_update_date() + '\n\n'
+
+    for study_day in current_timetable.items():
+        message = message + study_day[0] + '\n'
+        lessons = study_day[1]
+        for lesson in lessons:
+            lesson_list = list(lesson)
+            message = message + lesson_list[0] + ') ' + lesson.get(lesson_list[0]) + '\n'
+        message = message + '\n'
+
+    return message
 
 
-def get_timetable_url():
-    s_date, e_date = get_perend()
-    soup = BeautifulSoup(get_request_key(), 'html.parser')
-    heading = soup.findAll('a', class_="btn btn-default")
-    print(heading)
-    dict_2 = {head.text: head.get('href').split('=')[1].split('&')[0] for head in heading}
-    print(dict_2)
-    print(dict_2["ИВТб17о-1"])
-    return f'http://www.mstu.edu.ru/study/timetable/schedule.php?key={dict_2["ИВТб17о-1"]}&perstart={s_date}&perend={e_date}&perkind=%F7'
+def format_date(per):
+    return per.split('.')[2] + '-' + per.split('.')[1] + '-' + per.split('.')[0]
 
 
-def get_timetable_update_date():
-    """Function to get the date of the last timetable update"""
-    res = requests.get(timetable_url)
-    update_date = BeautifulSoup(res.text, 'html.parser').find('p', class_='text-right')
-    return update_date.text
+def get_timetable_param():
+    res = requests.post(timetable_url)
+    soup = BeautifulSoup(res.text, 'html.parser')
+
+    facs = soup.find('select', attrs={"name": "facs"}).find('option', string='ИАТ').get('value')
+    pers = soup.find('select', attrs={"name": "pers"}).find('option', selected=True).get('value')
+    perstart, perend, parity = soup.find('select', attrs={"name": "pers"}).find('option', selected=True).text.replace(' ', '-').split('-')
+
+    timetables = requests.post(timetable_url, data={'mode': '1', 'pers': f'{pers}', 'facs': f'{facs}', 'courses': '4'})
+
+    soup = BeautifulSoup(timetables.text, 'html.parser')
+    key = soup.find('a', class_='btn btn-default', text='ИВТб17о-1').get('href').replace('=', '&').split('&')[1]
+
+    return key, format_date(perstart), format_date(perend)
 
 
-def get_timetable_html_code():
-    """Function to get the entire html page with the timetable"""
-    timetable_code = requests.get(get_timetable_url())
-    return timetable_code.text
+def get_new_timetable():
+    key, perstart, perend = get_timetable_param()
 
+    timetable = requests.get(
+        f'http://www.mstu.edu.ru/study/timetable/schedule.php?key={key}&perstart={perstart}&perend={perend}&perkind=%F7')
 
-def get_heading(soup):
-    """Function for getting the heading of the timetable"""
-    heading = soup.find('h1')
-    return heading.text
+    soup = BeautifulSoup(timetable.text, 'html.parser')
+    study_days = soup.findAll('tbody')
 
+    new_timetable = {}
+    for study_day in study_days:
 
-def get_timetable_content(soup):
-    """"""
-    titles = soup.findAll('tbody')
-    return titles
+        lessons = []
+        if study_day.find('th') is not None:
+            day_name = study_day.find('th').text
 
+        study_day = study_day.findAll("td")
+        if study_day:
+            for row in range(0, 28, 4):
+                lessons.append({study_day[row].text: study_day[row + 1].text + ' ' + study_day[row + 2].text + ' ' + study_day[row + 3].text})
 
-def parse_timetable(titles):
-    result = str()
+            new_timetable.update({day_name: lessons})
+    return new_timetable
 
-    print(titles)
-
-    for title in titles:
-        list_2 = []
-        working_day = title.findAll('tr')
 
         day = title.find('th', colspan="4")
         if day:
@@ -103,11 +98,3 @@ def parse_timetable(titles):
     return result
 
 
-def create_timetable_message():
-    soup = BeautifulSoup(get_timetable_html_code(), 'html.parser')
-    update_date = get_timetable_update_date()
-    heading = get_heading(soup)
-    working_days = get_timetable_content(soup)
-    timetable = parse_timetable(working_days)
-    current_timetable = heading + '\n\n' + timetable + update_date
-    return heading + '\n\n' + timetable + update_date

@@ -31,7 +31,7 @@ async def send_welcome(message: types.Message):
 @dp.message_handler()
 async def send_timetable(message: types.Message):
     if message.text == 'Расписание':
-        await message.answer(p.create_timetable_message())
+        await message.answer(p.get_current_timetable())
     else:
         pass
 
