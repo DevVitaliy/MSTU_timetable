@@ -3,6 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 from jsondiff import diff
 
+
 timetable_url = 'http://www.mstu.edu.ru/study/timetable/'
 
 
@@ -77,24 +78,28 @@ def get_new_timetable():
     return new_timetable
 
 
-        day = title.find('th', colspan="4")
-        if day:
-            result = result + day.text + '\n'
+def check_update():
+    new_timetable = get_new_timetable()
 
-        for row in working_day:
-            lessons = row.findAll('td')
-            list_1 = []
-            for les in lessons:
-                list_1.append(les.text)
-            list_2.append(list_1)
-        for day1 in list_2:
-            if day1:
-                num, name, teacher, loc = day1
-                if name:
-                    result = result + f'{num}) {name} ({loc}) ' + '\n'
-                else:
-                    result = result + f'{num}) - ' + '\n'
-        result = result + '\n'
-    return result
+    with open('current_timetable.json') as json_file:
+        current_timetable = json.load(json_file)
 
+    changes = diff(current_timetable, new_timetable)
+    changes_massege = str()
+    if changes:
+        with open('current_timetable.json', 'w') as outfile:
+            json.dump(new_timetable, outfile, ensure_ascii=False)
+
+        days = changes.items()
+
+        for day in days:
+            date = day[0]
+            lessons = list(day[1].items())
+            for key, value in lessons[0][1].items():
+                if value == "  ":
+                    value = "Пары нет!"
+                changes_massege = date + '\n' + key + ')' + value
+
+            print(changes_massege)
+    return changes_massege
 

@@ -1,6 +1,9 @@
 import logging
 import settings
+import timetable_parser
 import timetable_parser as p
+import scheduler
+import asyncio
 
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import ReplyKeyboardRemove, ReplyKeyboardMarkup, KeyboardButton
@@ -25,7 +28,8 @@ async def send_welcome(message: types.Message):
     """
     This handler will be called when user sends `/start` or `/help` command
     """
-    await message.reply("Hi!\nI'm EchoBot!\nPowered by aiogram.", reply_markup=timetable_kb)
+    print(message.from_user.id)
+    await message.reply(f"Hi!\nI'm EchoBot!\nPowered by aiogram. {message.from_user}", reply_markup=timetable_kb)
 
 
 @dp.message_handler()
@@ -34,7 +38,13 @@ async def send_timetable(message: types.Message):
         await message.answer(p.get_current_timetable())
     else:
         pass
+# 859281521
+
+async def send_notification(message):
+    await bot.send_message(859281521, f'Расписание изменилось!\n {message}')
 
 
 if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    loop.create_task(scheduler.scheduler())
     executor.start_polling(dp, skip_updates=True)
