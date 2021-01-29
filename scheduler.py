@@ -5,7 +5,7 @@ import timetable_parser
 
 async def scheduler():
     while True:
-        await asyncio.sleep(5)
+        await asyncio.sleep(1800)
 
         changes = timetable_parser.check_update()
         if changes:

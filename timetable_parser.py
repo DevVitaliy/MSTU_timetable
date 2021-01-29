@@ -64,7 +64,7 @@ def get_new_timetable():
 
     new_timetable = {}
     for study_day in study_days:
-
+        day_name = str()
         lessons = []
         if study_day.find('th') is not None:
             day_name = study_day.find('th').text
@@ -85,7 +85,7 @@ def check_update():
         current_timetable = json.load(json_file)
 
     changes = diff(current_timetable, new_timetable)
-    changes_massege = str()
+    changes_message = str()
     if changes:
         with open('current_timetable.json', 'w') as outfile:
             json.dump(new_timetable, outfile, ensure_ascii=False)
@@ -98,8 +98,6 @@ def check_update():
             for key, value in lessons[0][1].items():
                 if value == "  ":
                     value = "Пары нет!"
-                changes_massege = date + '\n' + key + ')' + value
-
-            print(changes_massege)
-    return changes_massege
+                changes_message = date + '\n' + key + ')' + value
+    return changes_message
 
