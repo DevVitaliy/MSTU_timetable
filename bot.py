@@ -3,6 +3,7 @@ import settings
 import timetable_parser as p
 import scheduler
 import asyncio
+import db
 
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
@@ -10,6 +11,7 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
+# TODO: добавить нормальное логирование
 
 
 # Initialize bot and dispatcher
@@ -27,7 +29,8 @@ async def send_welcome(message: types.Message):
     """
     This handler will be called when user sends `/start` or `/help` command
     """
-    await message.reply(f"Hi!\nI'm EchoBot!\nPowered by aiogram.", reply_markup=timetable_kb)
+    await db.add_user(message.from_user.id)
+    await message.reply(f"Hi!\nI'm Bot!\nPowered by aiogram.", reply_markup=timetable_kb)
 
 
 @dp.message_handler()
@@ -39,9 +42,10 @@ async def send_timetable(message: types.Message):
 
 
 async def send_notification(message):
-    # TODO: добавить возможность работы с несколькими пользователями.
-    #  Для этого нужно где-то хранить все id пользователей и отправлять уведомление всем сохраненным пользователям.
-    await bot.send_message(859281521, f'Расписание изменилось!\n {message}')
+    all_users = await db.get_all_users()
+    if all_users:
+        for user in all_users:
+            await bot.send_message(user[0], f'Расписание изменилось!\n {message}')
 
 
 if __name__ == '__main__':
