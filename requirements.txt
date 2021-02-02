@@ -6,8 +6,10 @@ Babel==2.9.0
 beautifulsoup4==4.9.3
 certifi==2020.12.5
 chardet==3.0.4
+colorama==0.4.4
 idna==2.10
 jsondiff==1.2.0
+loguru==0.5.3
 multidict==5.1.0
 python-dotenv==0.15.0
 pytz==2020.5
@@ -15,4 +17,5 @@ requests==2.25.1
 soupsieve==2.1
 typing-extensions==3.7.4.3
 urllib3==1.26.3
+win32-setctime==1.0.3
 yarl==1.6.3

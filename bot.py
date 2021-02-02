@@ -5,19 +5,17 @@ import scheduler
 import asyncio
 import db
 
+from loguru import logger
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
-# TODO: добавить нормальное логирование
-
 
 # Initialize bot and dispatcher
 bot = Bot(token=settings.TG_TOKEN)
 dp = Dispatcher(bot)
-
 
 # Configure keyboard
 button_timetable = KeyboardButton('Расписание')
@@ -37,6 +35,7 @@ async def send_welcome(message: types.Message):
 async def send_timetable(message: types.Message):
     if message.text == 'Расписание':
         await message.answer(p.get_current_timetable())
+        logger.info(f"User {message.from_user.id} requested a timetable ")
     else:
         pass
 

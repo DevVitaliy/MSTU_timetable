@@ -2,7 +2,7 @@ import json
 import requests
 from bs4 import BeautifulSoup
 from jsondiff import diff
-
+from loguru import logger
 
 timetable_url = 'http://www.mstu.edu.ru/study/timetable/'
 
@@ -20,7 +20,12 @@ def get_current_timetable():
         current_timetable = json.load(json_file)
 
     message = str()
-    message = message + get_last_update_date() + '\n\n'
+    last_update_date = get_last_update_date()
+
+    if last_update_date:
+        message = message + last_update_date + '\n\n'
+    else:
+        logger.warning("Timetable is being updated ")
 
     for study_day in current_timetable.items():
         message = message + study_day[0] + '\n'
@@ -41,20 +46,30 @@ def get_timetable_param():
     res = requests.post(timetable_url)
     soup = BeautifulSoup(res.text, 'html.parser')
 
-    facs = soup.find('select', attrs={"name": "facs"}).find('option', string='ИАТ').get('value')
-    pers = soup.find('select', attrs={"name": "pers"}).find('option', selected=True).get('value')
-    perstart, perend, parity = soup.find('select', attrs={"name": "pers"}).find('option', selected=True).text.replace(' ', '-').split('-')
+    try:
+        # facs = None
+        facs = soup.find('select', attrs={"name": "facs"}).find('option', string='ИАТ').get('value')
+        pers = soup.find('select', attrs={"name": "pers"}).find('option', selected=True).get('value')
+        perstart, perend, parity = soup.find('select', attrs={"name": "pers"}).find('option', selected=True).text.replace(' ', '-').split('-')
+        timetables = requests.post(timetable_url, data={'mode': '1', 'pers': f'{pers}', 'facs': f'{facs}', 'courses': '4'})
 
-    timetables = requests.post(timetable_url, data={'mode': '1', 'pers': f'{pers}', 'facs': f'{facs}', 'courses': '4'})
-
-    soup = BeautifulSoup(timetables.text, 'html.parser')
-    key = soup.find('a', class_='btn btn-default', text='ИВТб17о-1').get('href').replace('=', '&').split('&')[1]
+        soup = BeautifulSoup(timetables.text, 'html.parser')
+        key = soup.find('a', class_='btn btn-default', text='ИВТб17о-1').get('href').replace('=', '&').split('&')[1]
+    except AttributeError:
+        return False
 
     return key, format_date(perstart), format_date(perend)
 
 
 def get_new_timetable():
-    key, perstart, perend = get_timetable_param()
+    param = get_timetable_param()
+    if param:
+        key, perstart, perend = param
+    else:
+        logger.warning("Timetable is being updated ")
+        with open('current_timetable.json') as json_file:
+            current_timetable = json.load(json_file)
+        return current_timetable
 
     timetable = requests.get(
         f'http://www.mstu.edu.ru/study/timetable/schedule.php?key={key}&perstart={perstart}&perend={perend}&perkind=%F7')
