@@ -10,7 +10,7 @@ timetable_url = 'http://www.mstu.edu.ru/study/timetable/'
 def get_last_update_date():
     res = requests.post(timetable_url)
     soup = BeautifulSoup(res.text, 'html.parser')
-    last_update = soup.find('p', class_='text-right').text
+    last_update = soup.find('p', class_='text-right')
 
     return last_update
 
@@ -23,8 +23,9 @@ def get_current_timetable():
     last_update_date = get_last_update_date()
 
     if last_update_date:
-        message = message + last_update_date + '\n\n'
+        message = message + last_update_date.text + '\n\n'
     else:
+        message = message + 'Расписание обновляется' + '\n\n'
         logger.warning("Timetable is being updated ")
 
     for study_day in current_timetable.items():
@@ -100,7 +101,8 @@ def check_update():
         current_timetable = json.load(json_file)
 
     changes = diff(current_timetable, new_timetable)
-    changes_message = str()
+    changes_message = str('')
+
     if changes:
         with open('current_timetable.json', 'w') as outfile:
             json.dump(new_timetable, outfile, ensure_ascii=False)
@@ -109,10 +111,14 @@ def check_update():
 
         for day in days:
             date = day[0]
+            changes_message = changes_message + date
             lessons = list(day[1].items())
-            for key, value in lessons[0][1].items():
-                if value == "  ":
-                    value = "Пары нет!"
-                changes_message = date + '\n' + key + ')' + value
+
+            for lesson in lessons:
+                for key, value in lesson[1].items():
+                    if value == "  ":
+                        value = "Пары нет!"
+                    changes_message = changes_message + '\n' + key + ') ' + value
+            changes_message = changes_message + '\n'
     return changes_message
 

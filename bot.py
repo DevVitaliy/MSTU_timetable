@@ -44,7 +44,7 @@ async def send_notification(message):
     all_users = await db.get_all_users()
     if all_users:
         for user in all_users:
-            await bot.send_message(user[0], f'Расписание изменилось!\n {message}')
+            await bot.send_message(user[0], f'Расписание изменилось!\n{message}')
 
 
 if __name__ == '__main__':
