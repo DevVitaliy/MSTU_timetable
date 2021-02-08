@@ -19,7 +19,8 @@ dp = Dispatcher(bot)
 
 # Configure keyboard
 button_timetable = KeyboardButton('Расписание')
-timetable_kb = ReplyKeyboardMarkup(resize_keyboard=True).add(button_timetable)
+button_nw_timetable = KeyboardButton('Расписание на следующую неделю')
+timetable_kb = ReplyKeyboardMarkup(resize_keyboard=True).add(button_timetable).add(button_nw_timetable)
 
 
 @dp.message_handler(commands=['start', 'help'])
@@ -34,17 +35,22 @@ async def send_welcome(message: types.Message):
 @dp.message_handler()
 async def send_timetable(message: types.Message):
     if message.text == 'Расписание':
-        await message.answer(p.get_current_timetable())
+        await message.answer(p.get_current_timetable(), reply_markup=timetable_kb)
         logger.info(f"User {message.from_user.id} requested a timetable ")
+    elif message.text == 'Расписание на следующую неделю':
+        await message.answer(p.get_next_week_timetable(), reply_markup=timetable_kb)
+        logger.info(f"User {message.from_user.id} requested a next week timetable ")
     else:
         pass
 
 
 async def send_notification(message):
     all_users = await db.get_all_users()
+    await bot.send_message(859281521, f'Расписание изменилось!\n{message}')
     if all_users:
         for user in all_users:
-            await bot.send_message(user[0], f'Расписание изменилось!\n{message}')
+            pass
+            # await bot.send_message(user[0], f'Расписание изменилось!\n{message}')
 
 
 if __name__ == '__main__':
